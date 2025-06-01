@@ -72,6 +72,7 @@ DATABASE_URL=mysql://root:root@db:3306/anka
 ⚙️ Configuracao do Prisma
 
 schema.prisma
+
 ```
 generator client {
   provider = "prisma-client-js"
@@ -87,7 +88,7 @@ model Cliente {
   nome      String
   email     String   @unique
   telefone  String?
-  status    Boolean  @default(true) 
+  status    Boolean  @default(true)
   criadoEm  DateTime @default(now())
   atualizadoEm DateTime @updatedAt
   alocacoes Alocacao[]
@@ -109,6 +110,51 @@ npx prisma migrate dev --name init
 ```
 
 Isso criará as tabelas necessárias no banco de dados.
+
+---
+
+## 🐳 Rodando com Docker e Prisma Migrate
+
+Após subir os containers com Docker Compose, é necessário aplicar as migrations do Prisma para criar as tabelas no banco de dados.
+
+### 1. Subindo os containers
+
+```bash
+docker-compose up --build
+```
+
+### 2. Aplicando as migrations do Prisma
+
+Abra um novo terminal e execute:
+
+```bash
+docker-compose exec backend npx prisma migrate deploy
+```
+
+Se quiser resetar o banco (apaga todos os dados e recria as tabelas):
+
+```bash
+docker-compose exec backend npx prisma migrate reset
+```
+
+### 3. Observações importantes
+
+- **Variável de ambiente do banco:**
+  No arquivo `.env` do backend, a variável `DATABASE_URL` deve ser:
+
+  ```
+  DATABASE_URL="mysql://root:root@mysql:3306/anka"
+  ```
+
+  (O host deve ser `mysql`, que é o nome do serviço no Docker Compose.)
+
+- **Resetando tudo:**
+  Para apagar todos os dados e subir do zero:
+  ```bash
+  docker-compose down -v
+  docker-compose up --build
+  docker-compose exec backend npx prisma migrate deploy
+  ```
 
 ---
 
@@ -136,4 +182,3 @@ AnkaTech/
 ├── docker-compose.yml   # Orquestração dos serviços
 └── README.md
 ```
-

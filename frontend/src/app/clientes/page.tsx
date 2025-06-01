@@ -174,7 +174,10 @@ export default function ClientesPage() {
             </Button>
           </div>
           {isLoading ? (
-            <div>Carregando...</div>
+            <div className="flex justify-center items-center gap-2">
+              <Loader2 className="animate-spin w-4 h-4" />
+              Carregando...
+            </div>
           ) : (
             <ul className="space-y-2">
               {data?.clientes?.map((cliente: Cliente) => (

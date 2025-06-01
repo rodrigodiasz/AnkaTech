@@ -20,13 +20,13 @@ services:
     container_name: anka_backend
     restart: always
     environment:
-      DATABASE_URL: mysql://root:root@localhost:3306/anka
+      DATABASE_URL: mysql://root:root@mysql:3306/anka
     ports:
       - "3001:3001"
     depends_on:
       - mysql
-    volumes:
-      - ./backend:/app
+    # volumes:
+    #   - ./backend:/app
     working_dir: /app
 
   frontend:
@@ -37,8 +37,8 @@ services:
       - "3002:3000"
     depends_on:
       - backend
-    volumes:
-      - ./frontend:/app
+    # volumes:
+    #   - ./frontend:/app
     working_dir: /app
 
 volumes:

@@ -5,12 +5,23 @@ import * as SwitchPrimitive from "@radix-ui/react-switch";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import { Moon, Sun } from "lucide-react";
+import { useEffect, useState } from "react";
 
-function ThemeSwitch({
+export function ThemeSwitch({
   className,
   ...props
 }: React.ComponentProps<typeof SwitchPrimitive.Root>) {
   const { theme, setTheme, resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    // Evita renderizar no SSR, só renderiza no cliente
+    return null;
+  }
 
   const isDark = resolvedTheme === "dark";
 
@@ -38,5 +49,3 @@ function ThemeSwitch({
     </SwitchPrimitive.Root>
   );
 }
-
-export { ThemeSwitch };
