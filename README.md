@@ -63,6 +63,16 @@ Exemplo para o backend (`.env`):
 
 ```
 DATABASE_URL=mysql://root:root@db:3306/anka
+SERVER_URL="http://localhost:3001"
+HOST="0.0.0.0"
+PORT="3001"
+FRONTEND_URL="http://localhost:3002"
+```
+
+Exemplo para o Frontend (`.env`):
+
+```
+NEXT_PUBLIC_API_URL=http://localhost:3001
 ```
 
 ---
