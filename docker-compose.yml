@@ -6,10 +6,10 @@ services:
     container_name: anka_mysql
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: anka
-      MYSQL_USER: anka_user
-      MYSQL_PASSWORD: anka_pass
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     ports:
       - "3306:3306"
     volumes:
@@ -20,13 +20,11 @@ services:
     container_name: anka_backend
     restart: always
     environment:
-      DATABASE_URL: mysql://root:root@mysql:3306/anka
+      DATABASE_URL: ${DATABASE_URL}
     ports:
       - "3001:3001"
     depends_on:
       - mysql
-    # volumes:
-    #   - ./backend:/app
     working_dir: /app
 
   frontend:
@@ -37,8 +35,6 @@ services:
       - "3002:3000"
     depends_on:
       - backend
-    # volumes:
-    #   - ./frontend:/app
     working_dir: /app
 
 volumes:
