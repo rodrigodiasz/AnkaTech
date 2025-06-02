@@ -73,9 +73,8 @@ Exemplo para o Frontend (`.env`):
 
 ```
 NEXT_PUBLIC_API_URL=http://localhost:3001
-```
 
----
+```
 
 ### 📄 Variáveis de Ambiente com Docker Compose
 
@@ -222,7 +221,12 @@ A aplicação estará disponível em:
 ```
 AnkaTech/
 ├── backend/             # API Fastify + Prisma
+│   ├── Dockerfile       # Dockerfile do backend
+│   └── .env             # Variáveis de ambiente do backend
 ├── frontend/            # Aplicação Next.js
+│   ├── Dockerfile       # Dockerfile do frontend
+│   └── .env             # Variáveis de ambiente do frontend
 ├── docker-compose.yml   # Orquestração dos serviços
+├── .env                 # Variáveis de ambiente do compose
 └── README.md
 ```
