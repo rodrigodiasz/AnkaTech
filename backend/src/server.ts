@@ -5,7 +5,7 @@ import Fastify, {
   FastifyRequest,
 } from "fastify";
 import { PrismaClient } from "@prisma/client";
-import { z} from "zod";
+import { z } from "zod";
 import fastifyCors from "@fastify/cors";
 
 const fastify: FastifyInstance = Fastify({ logger: true });
@@ -103,7 +103,7 @@ fastify.get(
   }
 );
 
-// Buscar clientes por nome e/ou email 
+// Buscar clientes por nome e/ou email
 fastify.get(
   "/clientes/busca",
   async (request: FastifyRequest, reply: FastifyReply) => {
@@ -215,10 +215,24 @@ fastify.post(
         .send({ error: "Ativo e valor são obrigatórios." });
     }
     try {
-      const alocacao = await prisma.alocacao.create({
-        data: { clienteId, ativo, valor },
+      // Verifica se já existe alocação para esse cliente e ativo
+      const alocacaoExistente = await prisma.alocacao.findFirst({
+        where: { clienteId, ativo },
       });
-      return reply.status(201).send(alocacao);
+      if (alocacaoExistente) {
+        // Se já existe, soma o valor
+        const alocacaoAtualizada = await prisma.alocacao.update({
+          where: { id: alocacaoExistente.id },
+          data: { valor: alocacaoExistente.valor + valor },
+        });
+        return reply.status(200).send(alocacaoAtualizada);
+      } else {
+        // Se não existe, cria nova
+        const alocacao = await prisma.alocacao.create({
+          data: { clienteId, ativo, valor },
+        });
+        return reply.status(201).send(alocacao);
+      }
     } catch (err) {
       return reply.status(500).send({ error: "Erro ao criar alocação." });
     }
@@ -281,7 +295,10 @@ fastify.delete(
 
 const start = async () => {
   try {
-    await fastify.listen({ port: Number(process.env.PORT), host: process.env.HOST });
+    await fastify.listen({
+      port: Number(process.env.PORT),
+      host: process.env.HOST,
+    });
     console.log(`Server running at ${process.env.SERVER_URL}`);
   } catch (err) {
     fastify.log.error(err);
