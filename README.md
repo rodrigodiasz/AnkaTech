@@ -77,6 +77,40 @@ NEXT_PUBLIC_API_URL=http://localhost:3001
 
 ---
 
+### 📄 Variáveis de Ambiente com Docker Compose
+
+O arquivo `docker-compose.yml` está configurado para utilizar variáveis de ambiente externas, facilitando a configuração e aumentando a segurança.
+Essas variáveis devem ser definidas em um arquivo `.env` na raiz do projeto.
+
+**Exemplo de `.env`:**
+
+```env
+MYSQL_ROOT_PASSWORD=root
+MYSQL_DATABASE=anka
+MYSQL_USER=anka_user
+MYSQL_PASSWORD=anka_pass
+DATABASE_URL=mysql://root:root@mysql:3306/anka
+```
+
+No `docker-compose.yml`, as variáveis são referenciadas assim:
+
+```yaml
+environment:
+  MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+  MYSQL_DATABASE: ${MYSQL_DATABASE}
+  MYSQL_USER: ${MYSQL_USER}
+  MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+```
+
+**Importante:**
+
+- Para rodar, basta garantir que o `.env` está presente e executar normalmente:
+  ```bash
+  docker-compose up
+  ```
+
+---
+
 ## 🗃️ Scripts e Migrações Prisma
 
 ⚙️ Configuracao do Prisma
