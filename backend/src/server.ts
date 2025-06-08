@@ -7,6 +7,7 @@ import Fastify, {
 import { PrismaClient } from "@prisma/client";
 import { z } from "zod";
 import fastifyCors from "@fastify/cors";
+import { encrypt, decrypt } from "./crypto";
 
 const fastify: FastifyInstance = Fastify({ logger: true });
 const prisma = new PrismaClient();
@@ -23,9 +24,14 @@ fastify.get("/", async (_request: FastifyRequest, _reply: FastifyReply) => {
 
 // Esquema de validação com Zod
 const clienteSchema = z.object({
-  nome: z.string().min(1),
-  email: z.string().email(),
-  telefone: z.string().optional(),
+  nome: z.string().min(3, "Nome é obrigatório"),
+  email: z.string().email("E-mail inválido"),
+  telefone: z
+    .string()
+    .regex(
+      /^\(\d{2}\) \d{5}-\d{4}$/,
+      "Telefone deve estar no formato (99) 99999-9999"
+    ),
   status: z.boolean().default(true),
 });
 
@@ -75,9 +81,24 @@ fastify.get("/clientes", async (request, reply) => {
       skip: (Number(page) - 1) * Number(limit),
       take: Number(limit),
       orderBy: { id: "desc" },
+      include: {
+        _count: {
+          select: { alocacoes: true },
+        },
+      },
     });
     const total = await prisma.cliente.count({ where });
-    return reply.send({ clientes, total });
+
+    // Criptografa o número de alocações antes de enviar para o frontend
+    const clientesComAlocacoesCriptografadas = clientes.map((cliente) => ({
+      ...cliente,
+      numeroAlocacoes: encrypt(Number(cliente._count.alocacoes)),
+    }));
+
+    return reply.send({
+      clientes: clientesComAlocacoesCriptografadas,
+      total,
+    });
   } catch (err) {
     console.error("Erro ao buscar clientes:", err);
     return reply.status(500).send({ error: "Erro ao buscar clientes." });
@@ -95,11 +116,24 @@ fastify.get(
     if (isNaN(id)) {
       return reply.status(400).send({ error: "ID inválido." });
     }
-    const cliente = await prisma.cliente.findUnique({ where: { id } });
+    const cliente = await prisma.cliente.findUnique({
+      where: { id },
+      include: {
+        _count: {
+          select: { alocacoes: true },
+        },
+      },
+    });
     if (!cliente) {
       return reply.status(404).send({ error: "Cliente não encontrado." });
     }
-    return reply.send(cliente);
+
+    const clienteComAlocacoesCriptografadas = {
+      ...cliente,
+      numeroAlocacoes: encrypt(Number(cliente._count.alocacoes)),
+    };
+
+    return reply.send(clienteComAlocacoesCriptografadas);
   }
 );
 
@@ -112,8 +146,21 @@ fastify.get(
     if (nome) where.nome = { contains: nome };
     if (email) where.email = { contains: email };
     try {
-      const clientes = await prisma.cliente.findMany({ where });
-      return reply.send(clientes);
+      const clientes = await prisma.cliente.findMany({
+        where,
+        include: {
+          _count: {
+            select: { alocacoes: true },
+          },
+        },
+      });
+
+      const clientesComAlocacoesCriptografadas = clientes.map((cliente) => ({
+        ...cliente,
+        numeroAlocacoes: encrypt(Number(cliente._count.alocacoes)),
+      }));
+
+      return reply.send(clientesComAlocacoesCriptografadas);
     } catch (err) {
       console.error("Erro ao buscar clientes (busca):", err);
       return reply
@@ -203,13 +250,13 @@ fastify.post(
   async (
     request: FastifyRequest<{
       Params: { id: string };
-      Body: { ativo: string; valor: number };
+      Body: { ativo: string; valor: string };
     }>,
     reply: FastifyReply
   ) => {
     const clienteId = Number(request.params.id);
     const { ativo, valor } = request.body;
-    if (!ativo || typeof valor !== "number") {
+    if (!ativo || !valor) {
       return reply
         .status(400)
         .send({ error: "Ativo e valor são obrigatórios." });
@@ -221,17 +268,29 @@ fastify.post(
       });
       if (alocacaoExistente) {
         // Se já existe, soma o valor
+        const valorAtual = Number(decrypt(alocacaoExistente.valor));
+        const novoValor = Number(valor);
         const alocacaoAtualizada = await prisma.alocacao.update({
           where: { id: alocacaoExistente.id },
-          data: { valor: alocacaoExistente.valor + valor },
+          data: { valor: encrypt(valorAtual + novoValor) },
         });
-        return reply.status(200).send(alocacaoAtualizada);
+        return reply.status(200).send({
+          ...alocacaoAtualizada,
+          valor: decrypt(alocacaoAtualizada.valor).toString(),
+        });
       } else {
         // Se não existe, cria nova
         const alocacao = await prisma.alocacao.create({
-          data: { clienteId, ativo, valor },
+          data: {
+            clienteId,
+            ativo,
+            valor: encrypt(Number(valor)),
+          },
         });
-        return reply.status(201).send(alocacao);
+        return reply.status(201).send({
+          ...alocacao,
+          valor: decrypt(alocacao.valor).toString(),
+        });
       }
     } catch (err) {
       return reply.status(500).send({ error: "Erro ao criar alocação." });
@@ -248,7 +307,14 @@ fastify.get(
   ) => {
     const clienteId = Number(request.params.id);
     const alocacoes = await prisma.alocacao.findMany({ where: { clienteId } });
-    return reply.send(alocacoes);
+
+    // Descriptografa os valores antes de enviar para o frontend
+    const alocacoesDescriptografadas = alocacoes.map((alocacao) => ({
+      ...alocacao,
+      valor: decrypt(alocacao.valor).toString(),
+    }));
+
+    return reply.send(alocacoesDescriptografadas);
   }
 );
 
@@ -258,7 +324,7 @@ fastify.put(
   async (
     request: FastifyRequest<{
       Params: { alocacaoId: string };
-      Body: { ativo?: string; valor?: number };
+      Body: { ativo?: string; valor?: string };
     }>,
     reply: FastifyReply
   ) => {
@@ -267,9 +333,15 @@ fastify.put(
     try {
       const alocacao = await prisma.alocacao.update({
         where: { id: alocacaoId },
-        data: { ativo, valor },
+        data: {
+          ativo,
+          valor: valor ? encrypt(Number(valor)) : undefined,
+        },
       });
-      return reply.send(alocacao);
+      return reply.send({
+        ...alocacao,
+        valor: decrypt(alocacao.valor).toString(),
+      });
     } catch (err) {
       return reply.status(500).send({ error: "Erro ao atualizar alocação." });
     }

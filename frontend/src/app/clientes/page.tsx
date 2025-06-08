@@ -16,6 +16,7 @@ import { ClienteForm, ClienteFormData } from "@/components/ClienteForm";
 import { Loader2, ArrowRight, ArrowLeft, Pencil } from "lucide-react";
 import { AlocacoesCliente } from "@/components/AlocacoesCliente";
 import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 
 type Cliente = {
   id: number;
@@ -48,7 +49,9 @@ export default function ClientesPage() {
           ...(appliedNome && { nome: appliedNome }),
           ...(appliedEmail && { email: appliedEmail }),
         });
-        const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/clientes/busca?${params}`);
+        const res = await axios.get(
+          `${process.env.NEXT_PUBLIC_API_URL}/clientes/busca?${params}`
+        );
         return { clientes: res.data, total: res.data.length };
       }
       const params = new URLSearchParams({
@@ -56,7 +59,9 @@ export default function ClientesPage() {
         limit: String(limit),
         ...(appliedStatus && { status: appliedStatus }),
       });
-      return (await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/clientes?${params}`)).data;
+      return (
+        await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/clientes?${params}`)
+      ).data;
     },
   });
 
@@ -67,25 +72,32 @@ export default function ClientesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["clientes"] });
       setOpen(false);
+      toast.success("Cliente cadastrado com sucesso!");
     },
   });
 
   // Editar cliente
   const editMutation = useMutation({
     mutationFn: (data: ClienteFormData) =>
-      axios.put(`${process.env.NEXT_PUBLIC_API_URL}/clientes/${editing?.id}`, data),
+      axios.put(
+        `${process.env.NEXT_PUBLIC_API_URL}/clientes/${editing?.id}`,
+        data
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["clientes"] });
       setEditing(null);
       setOpen(false);
+      toast.success("Cliente atualizado com sucesso!");
     },
   });
 
   // Excluir cliente
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/clientes/${id}`),
+    mutationFn: (id: number) =>
+      axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/clientes/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["clientes"] });
+      toast.success("Cliente excluído com sucesso!");
     },
   });
 

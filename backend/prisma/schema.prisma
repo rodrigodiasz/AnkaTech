@@ -22,6 +22,6 @@ model Alocacao {
   id         Int      @id @default(autoincrement())
   clienteId  Int
   ativo      String
-  valor      Float
+  valor      String
   cliente    Cliente  @relation(fields: [clienteId], references: [id])
 }

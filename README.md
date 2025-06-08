@@ -29,6 +29,13 @@ Toda a aplicação é implementada 100% em TypeScript, dividida em dois projetos
 - Endpoint de ativos financeiros com dados mockados
 - Validação de dados com `Zod`
 - Integração com MySQL usando `Prisma`
+- Validação de telefone no formato (99) 99999-9999
+- Formatação automática de telefone durante digitação
+- Mensagens de erro claras e validações em tempo real
+- Notificações toast para feedback de ações
+- Criptografia de dados sensíveis (número de alocações) usando AES-256-GCM
+- Gerenciamento seguro de chaves de criptografia
+- Decodificação automática de dados criptografados
 
 ---
 
@@ -40,12 +47,18 @@ Toda a aplicação é implementada 100% em TypeScript, dividida em dois projetos
 - **Zod** — Validação dos dados nos formulários.
 - **React Query** — Gerenciamento de requisições.
 - **Axios** — Cliente HTTP para comunicação com o backend.
+- **Sonner** — Notificações toast elegantes.
 
 #### Funcionalidades:
 
 - Página para cadastro, listagem e edição de clientes.
 - Página de visualização de ativos.
 - Interface funcional baseada em componentes reutilizáveis do ShadCN.
+- Validação de formulários com feedback visual.
+- Formatação automática de campos (ex: telefone).
+- Notificações toast para sucesso/erro nas operações.
+- Filtros de busca por nome, email e status.
+- Paginação de resultados.
 
 ---
 
@@ -59,6 +72,8 @@ A aplicação é totalmente containerizada usando Docker Compose:
 
 ### ⚙️ Variáveis de Ambiente
 
+**Importante:** Para que a criptografia funcione corretamente, é necessário definir uma chave de criptografia válida no arquivo `.env` do backend. Esta chave deve ter exatamente 32 caracteres para garantir a segurança adequada do algoritmo AES-256-GCM.
+
 Exemplo para o backend (`.env`):
 
 ```
@@ -67,6 +82,7 @@ SERVER_URL="http://localhost:3001"
 HOST="0.0.0.0"
 PORT="3001"
 FRONTEND_URL="http://localhost:3002"
+ENCRYPTION_KEY="sua-chave-secreta-de-32-caracteres" # Chave para criptografia AES-256-GCM
 ```
 
 Exemplo para o Frontend (`.env`):

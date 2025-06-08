@@ -11,7 +11,7 @@ import { Pencil, Trash2 } from "lucide-react";
 type Alocacao = {
   id: number;
   ativo: string;
-  valor: number;
+  valor: string;
 };
 
 type Ativo = {
@@ -33,22 +33,30 @@ export function AlocacoesCliente({ clienteId }: { clienteId: number }) {
   const { data: alocacoes, isLoading } = useQuery<Alocacao[]>({
     queryKey: ["alocacoes", clienteId],
     queryFn: async () =>
-      (await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/clientes/${clienteId}/alocacoes`)).data,
+      (
+        await axios.get(
+          `${process.env.NEXT_PUBLIC_API_URL}/clientes/${clienteId}/alocacoes`
+        )
+      ).data,
   });
 
   // Buscar ativos fixos
   const { data: ativos } = useQuery<Ativo[]>({
     queryKey: ["ativos"],
-    queryFn: async () => (await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/ativos`)).data,
+    queryFn: async () =>
+      (await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/ativos`)).data,
   });
 
   // Adicionar alocação
   const addMutation = useMutation({
     mutationFn: () =>
-      axios.post(`${process.env.NEXT_PUBLIC_API_URL}/clientes/${clienteId}/alocacoes`, {
-        ativo: novoAtivo,
-        valor: novoValor,
-      }),
+      axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/clientes/${clienteId}/alocacoes`,
+        {
+          ativo: novoAtivo,
+          valor: novoValor,
+        }
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["alocacoes", clienteId] });
       setNovoAtivo("");
@@ -62,7 +70,8 @@ export function AlocacoesCliente({ clienteId }: { clienteId: number }) {
 
   // Excluir alocação
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/alocacoes/${id}`),
+    mutationFn: (id: number) =>
+      axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/alocacoes/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["alocacoes", clienteId] });
       toast.success("Alocação adicionada com sucesso!");
@@ -75,10 +84,13 @@ export function AlocacoesCliente({ clienteId }: { clienteId: number }) {
   // Editar alocação
   const editMutation = useMutation({
     mutationFn: () =>
-      axios.put(`${process.env.NEXT_PUBLIC_API_URL}/alocacoes/${editando?.id}`, {
-        ativo: editAtivo,
-        valor: editValor,
-      }),
+      axios.put(
+        `${process.env.NEXT_PUBLIC_API_URL}/alocacoes/${editando?.id}`,
+        {
+          ativo: editAtivo,
+          valor: editValor,
+        }
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["alocacoes", clienteId] });
       setEditando(null);
@@ -103,7 +115,7 @@ export function AlocacoesCliente({ clienteId }: { clienteId: number }) {
             return (
               <li key={a.id} className="flex justify-between items-center mb-2">
                 <span>
-                  {a.ativo} — {a.valor.toFixed(0)} Alocações
+                  {a.ativo} — {Number(a.valor).toFixed(0)} Alocações
                   {precoAtual !== undefined && (
                     <span className="ml-2 text-xs text-gray-500">
                       — Preço atual: R$ {precoAtual.toFixed(2)}
@@ -117,7 +129,7 @@ export function AlocacoesCliente({ clienteId }: { clienteId: number }) {
                     onClick={() => {
                       setEditando(a);
                       setEditAtivo(a.ativo);
-                      setEditValor(a.valor);
+                      setEditValor(Number(a.valor));
                     }}
                   >
                     <Pencil className="w-4 h-4" />
@@ -167,8 +179,11 @@ export function AlocacoesCliente({ clienteId }: { clienteId: number }) {
             <Input
               placeholder="Valor"
               type="number"
+              min="1"
               value={novoValor}
-              onChange={(e) => setNovoValor(Number(e.target.value))}
+              onChange={(e) =>
+                setNovoValor(Math.max(1, Number(e.target.value)))
+              }
               required
             />
             <Button type="submit" disabled={addMutation.isPending}>
@@ -212,8 +227,11 @@ export function AlocacoesCliente({ clienteId }: { clienteId: number }) {
               <Input
                 placeholder="Valor"
                 type="number"
+                min="1"
                 value={editValor}
-                onChange={(e) => setEditValor(Number(e.target.value))}
+                onChange={(e) =>
+                  setEditValor(Math.max(1, Number(e.target.value)))
+                }
                 required
               />
               <div className="flex gap-2 justify-end">

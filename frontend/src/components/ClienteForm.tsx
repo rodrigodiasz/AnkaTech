@@ -17,22 +17,34 @@ import {
 } from "@/components/ui/dialog";
 import { useState } from "react";
 
-const clienteSchema = z.object({
-  nome: z.string().min(1, "Nome obrigatório"),
-  email: z.string().email("E-mail inválido"),
-  telefone: z.string().optional(),
-  status: z.boolean(),
-});
-
-export type ClienteFormData = z.infer<typeof clienteSchema>;
+export interface ClienteFormData {
+  nome: string;
+  email: string;
+  telefone?: string;
+  status: boolean;
+}
 
 type ClienteFormProps = {
   onSubmit: (data: ClienteFormData) => void;
-  defaultValues?: ClienteFormData;
+  defaultValues?: Partial<ClienteFormData>;
   isLoading?: boolean;
   onDelete?: () => void;
   isEditMode?: boolean;
 };
+
+const clienteSchema = z.object({
+  nome: z
+    .string()
+    .min(3, "Nome é obrigatório e deve ter pelo menos 3 caracteres"),
+  email: z.string().min(1, "E-mail é obrigatório").email("E-mail inválido"),
+  telefone: z
+    .string()
+    .regex(
+      /^\(\d{2}\) \d{5}-\d{4}$/,
+      "Telefone deve estar no formato (99) 99999-9999"
+    ),
+  status: z.boolean().default(true),
+});
 
 export function ClienteForm({
   onSubmit,
@@ -48,14 +60,39 @@ export function ClienteForm({
     watch,
     control,
   } = useForm<ClienteFormData>({
-    resolver: zodResolver(clienteSchema),
+    resolver: zodResolver(clienteSchema) as any,
     defaultValues: {
+      status: true,
       ...defaultValues,
-      status: defaultValues?.status ?? true,
     },
   });
 
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const isActive = watch("status");
+
+  // Função para formatar o telefone
+  const formatPhoneNumber = (value: string) => {
+    const numbers = value.replace(/\D/g, "");
+    if (numbers.length <= 2) return numbers;
+    if (numbers.length <= 7)
+      return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
+    return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(
+      7,
+      11
+    )}`;
+  };
+
+  const handleDelete = () => {
+    if (isActive) {
+      toast.error(
+        "Não é possível excluir um cliente ativo. Desative o cliente primeiro."
+      );
+      setConfirmOpen(false);
+      return;
+    }
+    onDelete?.();
+    setConfirmOpen(false);
+  };
 
   return (
     <form
@@ -63,33 +100,49 @@ export function ClienteForm({
         async (data) => {
           try {
             await onSubmit(data);
-            toast.success("Cliente salvo com sucesso!");
           } catch (e) {
             toast.error("Erro ao salvar cliente.");
           }
         },
         (formError) => {
-          toast.error("Preencha todos os campos obrigatórios corretamente.");
+          const errorMessages = Object.values(formError).map(
+            (error) => error.message
+          );
+          toast.error(
+            errorMessages[0] ||
+              "Preencha todos os campos obrigatórios corretamente."
+          );
         }
       )}
       className="space-y-6"
     >
       <div>
-        <Input placeholder="Nome" {...register("nome")} />
+        <Input placeholder="Nome *" {...register("nome")} />
         {errors.nome && (
-          <span className="text-red-500 text-xs">{errors.nome.message}</span>
+          <span className="text-red-500 text-xs mt-1 block">
+            {errors.nome.message}
+          </span>
         )}
       </div>
       <div>
-        <Input placeholder="E-mail" {...register("email")} />
+        <Input placeholder="E-mail *" {...register("email")} />
         {errors.email && (
-          <span className="text-red-500 text-xs">{errors.email.message}</span>
+          <span className="text-red-500 text-xs mt-1 block">
+            {errors.email.message}
+          </span>
         )}
       </div>
       <div>
-        <Input placeholder="Telefone" {...register("telefone")} />
+        <Input
+          placeholder="Telefone (99) 99999-9999"
+          {...register("telefone", {
+            onChange: (e) => {
+              e.target.value = formatPhoneNumber(e.target.value);
+            },
+          })}
+        />
         {errors.telefone && (
-          <span className="text-red-500 text-xs">
+          <span className="text-red-500 text-xs mt-1 block">
             {errors.telefone.message}
           </span>
         )}
@@ -129,8 +182,9 @@ export function ClienteForm({
                   <DialogTitle>Confirmar exclusão</DialogTitle>
                 </DialogHeader>
                 <div className="mb-4 text-sm text-red-600">
-                  Tem certeza que deseja excluir este cliente? Essa ação não
-                  pode ser desfeita.
+                  {isActive
+                    ? "Não é possível excluir um cliente ativo. Desative o cliente primeiro."
+                    : "Tem certeza que deseja excluir este cliente? Essa ação não pode ser desfeita."}
                 </div>
                 <div className="flex justify-end gap-2">
                   <Button
@@ -141,10 +195,8 @@ export function ClienteForm({
                   </Button>
                   <Button
                     variant="destructive"
-                    onClick={() => {
-                      setConfirmOpen(false);
-                      onDelete();
-                    }}
+                    onClick={handleDelete}
+                    disabled={isActive}
                   >
                     Confirmar exclusão
                   </Button>
