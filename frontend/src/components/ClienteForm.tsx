@@ -183,7 +183,7 @@ export function ClienteForm({
                 </DialogHeader>
                 <div className="mb-4 text-sm text-red-600">
                   {isActive
-                    ? "Não é possível excluir um cliente ativo. Desative o cliente primeiro."
+                    ? "Não é possível excluir um cliente ativo com alocações. Exclua as alocações primeiro."
                     : "Tem certeza que deseja excluir este cliente? Essa ação não pode ser desfeita."}
                 </div>
                 <div className="flex justify-end gap-2">
